@@ -22,24 +22,32 @@ export function PlayScreen({ state, dispatch, aiDelayMs }: PlayScreenProps) {
   const { thinking } = useAiTurn(state, dispatch, aiDelayMs)
 
   return (
-    <div className="flex flex-col items-center gap-6 text-slate-900 dark:text-slate-200">
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 py-8 text-foreground">
       <Announcer state={state} />
-      <p className="text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
-        {thinking
-          ? 'Enemy is thinking…'
-          : state.currentPlayer === Player.Human
-            ? 'Your turn — fire at will'
-            : 'Waiting…'}
-      </p>
-      <div className="flex flex-col items-start gap-8 md:flex-row md:gap-12">
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+      <div
+        className="flex flex-col items-center gap-2 border-b border-neutral-200 pb-6 dark:border-neutral-800"
+        aria-live="polite"
+      >
+        <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+          {thinking ? 'Enemy turn' : 'Your turn'}
+        </span>
+        <p className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {thinking
+            ? 'Enemy is thinking…'
+            : state.currentPlayer === Player.Human
+              ? 'Fire at will'
+              : 'Waiting…'}
+        </p>
+      </div>
+      <div className="flex flex-col items-start gap-10 md:flex-row md:gap-16">
+        <section className="flex flex-col items-center gap-3">
+          <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
             Your fleet
           </h2>
           <OwnBoard state={state} />
         </section>
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+        <section className="flex flex-col items-center gap-3">
+          <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
             Enemy waters
           </h2>
           <EnemyBoard state={state} dispatch={dispatch} disabled={thinking} />

@@ -17,8 +17,32 @@ export type CellProps = {
 }
 
 /**
- * A single board cell (SPEC 9). Presentation only: it renders the given state
- * and reports intent via callbacks — it never decides hits/misses.
+ * Near-monochrome greyscale fill per cell state. Applied as an inline style so
+ * it overrides the unlayered global `background-color` rules in `src/index.css`
+ * (out of scope to edit). The values are dark-aware CSS variables defined in
+ * `board.module.css` on the grid container, so light/dark mode keep working.
+ */
+function fillVar(state: CellState): string | undefined {
+  switch (state) {
+    case CellState.Empty:
+    case CellState.Miss:
+      return 'var(--ui-water, #f2f2f2)'
+    case CellState.Ship:
+      return 'var(--ui-ship, #52525b)'
+    case CellState.Hit:
+      return 'var(--ui-hit, #d4d4d8)'
+    case CellState.Sunk:
+      return 'var(--ui-sunk, #171717)'
+    default:
+      return undefined
+  }
+}
+
+/**
+ * A single board cell (SPEC §9). Presentation only: it renders the given state
+ * and reports intent via callbacks — it never decides hits/misses. The visual
+ * treatment is a quiet, editorial greyscale: flat fills, hairline borders, and
+ * colorblind-safe marker SHAPES (dot / ✕ / burst / block) carry the meaning.
  */
 export const Cell = forwardRef<HTMLDivElement, CellProps>(function Cell(
   { state, label, isFocusTarget, disabled, onFire, onFocusCell },
@@ -37,14 +61,11 @@ export const Cell = forwardRef<HTMLDivElement, CellProps>(function Cell(
       onClick={() => {
         if (!disabled) onFire()
       }}
+      style={{ backgroundColor: fillVar(state) }}
       className={cn(
-        'flex aspect-square w-8 items-center justify-center border border-slate-300 text-sm outline-none dark:border-slate-700',
-        'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-0',
-        state === CellState.Empty && 'bg-sky-50 dark:bg-slate-900',
-        state === CellState.Miss && 'bg-sky-100 dark:bg-slate-800',
-        (state === CellState.Hit || state === CellState.Sunk) &&
-          'bg-red-100 dark:bg-red-950',
-        state === CellState.Ship && 'bg-slate-200 dark:bg-slate-700',
+        'flex aspect-square w-8 items-center justify-center text-sm outline-none',
+        'border border-neutral-300 dark:border-neutral-700',
+        'focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-0 dark:focus-visible:ring-neutral-100',
         disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-95',
       )}
     >
