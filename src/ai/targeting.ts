@@ -1,28 +1,27 @@
 import type { Board, Coord, Ship } from '../engine/types'
-import { isSearchParityCell } from './parity'
 
 /**
- * AI targeting (SPEC §6).
+ * AI targeting — probability-density heat map (this experiment).
  *
- * `selectShot` is a PURE, DETERMINISTIC function of the board's observable
- * state: the `shots` fired against it plus each ship's `hits`/sunk status.
- * The AI holds no persistent mode state; its next shot is recomputed from
- * scratch each turn. All ties are broken by a fixed ordering: lowest `row`,
- * then lowest `col` (§6).
+ * `selectShot` is a PURE, DETERMINISTIC function of the board's OBSERVABLE
+ * state only: the `shots` fired against it plus each ship's `hits`/sunk
+ * status and its (publicly known) length. It never peeks at un-fired ship
+ * positions. The AI holds no persistent mode state; its next shot is
+ * recomputed from scratch each turn.
+ *
+ * Each turn it builds a heat map by enumerating, for every ship that is not
+ * yet sunk, all legal placements consistent with the observable evidence,
+ * and firing at the un-fired cell with the maximum density. Because the map
+ * derives entirely from evidence, hunt/target behaviour and reset-on-sink
+ * fall out naturally: while a ship is wounded the map concentrates on
+ * completing it; once it sinks the wound clears and the map reopens to full
+ * search. All ties are broken by a fixed ordering: lowest `row`, then lowest
+ * `col`.
  */
 
 /** Fixed tie-break: lowest row, then lowest col. */
 function compareCoords(a: Coord, b: Coord): number {
   return a.row - b.row || a.col - b.col
-}
-
-/** The lowest-ordered coord under the fixed tie-break, or null if none. */
-function pickByTieBreak(coords: readonly Coord[]): Coord | null {
-  let best: Coord | null = null
-  for (const c of coords) {
-    if (best === null || compareCoords(c, best) < 0) best = c
-  }
-  return best
 }
 
 function inBounds(coord: Coord, board: Board): boolean {
@@ -39,10 +38,40 @@ function isSunk(ship: Ship): boolean {
   return ship.hits.length >= ship.size
 }
 
+function coordKey(coord: Coord): string {
+  return `${coord.row},${coord.col}`
+}
+
 /**
- * "Unresolved hits": hit cells that do NOT belong to an already-sunk ship
- * (SPEC §6.1). Because ships may not touch (§3.1), at most one ship can
- * have unresolved hits at any time.
+ * Coordinates that have been fired upon and resulted in a MISS: every shot
+ * that is not one of some ship's recorded hits.
+ */
+function missSet(board: Board, fired: Set<string>): Set<string> {
+  const hitKeys = new Set<string>()
+  for (const ship of board.ships) {
+    for (const hit of ship.hits) hitKeys.add(coordKey(hit))
+  }
+  const misses = new Set<string>()
+  for (const key of fired) {
+    if (!hitKeys.has(key)) misses.add(key)
+  }
+  return misses
+}
+
+/** Coordinates belonging to an already-sunk ship (all of its hit cells). */
+function sunkCells(board: Board): Coord[] {
+  const cells: Coord[] = []
+  for (const ship of board.ships) {
+    if (!isSunk(ship)) continue
+    for (const hit of ship.hits) cells.push(hit)
+  }
+  return cells
+}
+
+/**
+ * Unresolved hits: hit cells that do NOT belong to an already-sunk ship.
+ * Because ships may not touch (§3.1), these always belong to a single
+ * wounded ship, so the map naturally concentrates on completing it.
  */
 function unresolvedHits(board: Board): Coord[] {
   const hits: Coord[] = []
@@ -53,154 +82,145 @@ function unresolvedHits(board: Board): Coord[] {
   return hits
 }
 
-function coordKey(coord: Coord): string {
-  return `${coord.row},${coord.col}`
+/**
+ * Enumerate the cells of one placement of `size` at `origin` with the given
+ * orientation, or `null` if it runs off the board.
+ */
+function placementCells(
+  origin: Coord,
+  size: number,
+  horizontal: boolean,
+  board: Board,
+): Coord[] | null {
+  const cells: Coord[] = []
+  for (let i = 0; i < size; i++) {
+    const coord = horizontal
+      ? { row: origin.row, col: origin.col + i }
+      : { row: origin.row + i, col: origin.col }
+    if (!inBounds(coord, board)) return null
+    cells.push(coord)
+  }
+  return cells
 }
 
-function makeFiredSet(board: Board): Set<string> {
-  return new Set(board.shots.map(coordKey))
+/**
+ * Accumulate probability density for every ship that is not yet sunk by
+ * enumerating all evidence-consistent placements and, for each, incrementing
+ * the heat of every covered cell that has not yet been fired.
+ *
+ * A placement is consistent when it: stays in bounds; covers no missed cell;
+ * covers no cell of an already-sunk ship and never touches one (ships may not
+ * touch, §3.1); and — when there are unresolved hits — covers ALL of them, so
+ * the map focuses on finishing the wounded ship.
+ */
+function buildHeatMap(board: Board, fired: Set<string>): number[][] {
+  const misses = missSet(board, fired)
+  const sunk = sunkCells(board)
+  const sunkKeys = new Set(sunk.map(coordKey))
+  // No-touch buffer: cells king-adjacent to a sunk ship cannot hold a ship.
+  const buffer = new Set<string>()
+  for (const cell of sunk) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue
+        const c = { row: cell.row + dr, col: cell.col + dc }
+        if (inBounds(c, board) && !sunkKeys.has(coordKey(c))) {
+          buffer.add(coordKey(c))
+        }
+      }
+    }
+  }
+
+  const hits = unresolvedHits(board)
+  const hitKeys = new Set(hits.map(coordKey))
+
+  const heat: number[][] = Array.from({ length: board.height }, () =>
+    new Array<number>(board.width).fill(0),
+  )
+
+  for (const ship of board.ships) {
+    if (isSunk(ship)) continue
+    for (const horizontal of [true, false]) {
+      const maxRow = horizontal ? board.height - 1 : board.height - ship.size
+      const maxCol = horizontal ? board.width - ship.size : board.width - 1
+      for (let row = 0; row <= maxRow; row++) {
+        for (let col = 0; col <= maxCol; col++) {
+          const cells = placementCells(
+            { row, col },
+            ship.size,
+            horizontal,
+            board,
+          )
+          if (cells === null) continue
+
+          let legal = true
+          let coversAllHits = true
+          for (const cell of cells) {
+            const key = coordKey(cell)
+            if (misses.has(key) || sunkKeys.has(key) || buffer.has(key)) {
+              legal = false
+              break
+            }
+          }
+          if (!legal) continue
+
+          if (hitKeys.size > 0) {
+            let covered = 0
+            for (const cell of cells) {
+              if (hitKeys.has(coordKey(cell))) covered++
+            }
+            coversAllHits = covered === hitKeys.size
+          }
+          if (!coversAllHits) continue
+
+          for (const cell of cells) {
+            if (!fired.has(coordKey(cell))) heat[cell.row][cell.col] += 1
+          }
+        }
+      }
+    }
+  }
+
+  return heat
 }
 
-const ORTHOGONAL: readonly Coord[] = [
-  { row: -1, col: 0 },
-  { row: 1, col: 0 },
-  { row: 0, col: -1 },
-  { row: 0, col: 1 },
-]
+/**
+ * Choose the AI's next shot using the probability-density heat map.
+ *
+ * Fires at the un-fired cell with the maximum density (fixed tie-break:
+ * lowest row, then lowest col). If the map is entirely flat (no consistent
+ * placement contributes heat), falls back to the lowest un-fired cell so the
+ * function always returns an in-bounds, never-before-fired coordinate.
+ */
+export function selectShot(board: Board): Coord {
+  const fired = new Set(board.shots.map(coordKey))
+  const heat = buildHeatMap(board, fired)
 
-/** Search mode (§6.1): fire the lowest parity cell not yet fired upon. */
-function searchShot(board: Board, fired: Set<string>): Coord | null {
-  const candidates: Coord[] = []
+  let best: Coord | null = null
+  let bestHeat = 0
+  for (let row = 0; row < board.height; row++) {
+    for (let col = 0; col < board.width; col++) {
+      if (fired.has(coordKey({ row, col }))) continue
+      if (heat[row][col] > bestHeat) {
+        bestHeat = heat[row][col]
+        best = { row, col }
+      }
+    }
+  }
+  if (best !== null) return best
+
+  // Flat map: fire the lowest un-fired cell by the fixed tie-break.
+  let fallback: Coord | null = null
   for (let row = 0; row < board.height; row++) {
     for (let col = 0; col < board.width; col++) {
       const coord = { row, col }
-      if (!isSearchParityCell(coord)) continue
       if (fired.has(coordKey(coord))) continue
-      candidates.push(coord)
+      if (fallback === null || compareCoords(coord, fallback) < 0) {
+        fallback = coord
+      }
     }
   }
-  return pickByTieBreak(candidates)
-}
-
-/** Hunt mode (§6.2): probe the orthogonal neighbors of a single hit. */
-function huntShot(hit: Coord, board: Board, fired: Set<string>): Coord | null {
-  const candidates: Coord[] = []
-  for (const delta of ORTHOGONAL) {
-    const coord = { row: hit.row + delta.row, col: hit.col + delta.col }
-    if (!inBounds(coord, board)) continue
-    if (fired.has(coordKey(coord))) continue
-    candidates.push(coord)
-  }
-  return pickByTieBreak(candidates)
-}
-
-/**
- * Find a maximal collinear group (>=2 cells sharing a row or column) among
- * the unresolved hits. Because a single un-sunk ship's hits are always
- * collinear, this identifies that ship's axis while ignoring any stray,
- * non-collinear hit.
- */
-function findCollinearLine(
-  hits: readonly Coord[],
-): { axis: 'row' | 'col'; line: Coord[] } | null {
-  const byRow = new Map<number, Coord[]>()
-  const byCol = new Map<number, Coord[]>()
-  for (const hit of hits) {
-    const r = byRow.get(hit.row) ?? []
-    r.push(hit)
-    byRow.set(hit.row, r)
-    const c = byCol.get(hit.col) ?? []
-    c.push(hit)
-    byCol.set(hit.col, c)
-  }
-
-  let best: { axis: 'row' | 'col'; line: Coord[] } | null = null
-  const consider = (axis: 'row' | 'col', line: Coord[]): void => {
-    if (line.length < 2) return
-    if (
-      best === null ||
-      line.length > best.line.length ||
-      (line.length === best.line.length &&
-        compareCoords(pickByTieBreak(line)!, pickByTieBreak(best.line)!) < 0)
-    ) {
-      best = { axis, line }
-    }
-  }
-  for (const line of byRow.values()) consider('row', line)
-  for (const line of byCol.values()) consider('col', line)
-  return best
-}
-
-/** Target mode (§6.3): fire at the open ends of a locked collinear line. */
-function targetShot(
-  line: Coord[],
-  axis: 'row' | 'col',
-  board: Board,
-  fired: Set<string>,
-): Coord | null {
-  const values = line.map((c) => (axis === 'row' ? c.col : c.row))
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const fixed = axis === 'row' ? line[0].row : line[0].col
-
-  const ends: Coord[] =
-    axis === 'row'
-      ? [
-          { row: fixed, col: min - 1 },
-          { row: fixed, col: max + 1 },
-        ]
-      : [
-          { row: min - 1, col: fixed },
-          { row: max + 1, col: fixed },
-        ]
-
-  const candidates = ends.filter(
-    (coord) => inBounds(coord, board) && !fired.has(coordKey(coord)),
-  )
-  return pickByTieBreak(candidates)
-}
-
-/**
- * Choose the AI's next shot against the given board (SPEC §6).
- *
- * Modes are evaluated in order each turn and derived purely from board
- * state: target (2+ collinear unresolved hits) → hunt (one unresolved hit)
- * → search (no unresolved hits). On a sink, hits become resolved and the AI
- * cleanly returns to search (§6.4). Never returns an already-fired coord.
- */
-export function selectShot(board: Board): Coord {
-  const fired = makeFiredSet(board)
-  const hits = unresolvedHits(board)
-
-  if (hits.length >= 2) {
-    const collinear = findCollinearLine(hits)
-    if (collinear) {
-      const shot = targetShot(collinear.line, collinear.axis, board, fired)
-      if (shot) return shot
-    }
-    // Line ends exhausted: fall back to probing every unresolved hit.
-    const huntCandidates = hits
-      .map((hit) => huntShot(hit, board, fired))
-      .filter((c): c is Coord => c !== null)
-    const hunt = pickByTieBreak(huntCandidates)
-    if (hunt) return hunt
-  } else if (hits.length === 1) {
-    const shot = huntShot(hits[0], board, fired)
-    if (shot) return shot
-  }
-
-  const search = searchShot(board, fired)
-  if (search) return search
-
-  // No parity cell left: fire the lowest remaining unfired cell.
-  const anyCell: Coord[] = []
-  for (let row = 0; row < board.height; row++) {
-    for (let col = 0; col < board.width; col++) {
-      if (!fired.has(coordKey({ row, col }))) anyCell.push({ row, col })
-    }
-  }
-  const fallback = pickByTieBreak(anyCell)
-  if (fallback) return fallback
+  if (fallback !== null) return fallback
 
   throw new Error('selectShot: no unfired cell available')
 }
