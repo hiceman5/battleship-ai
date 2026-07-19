@@ -54,15 +54,25 @@ export function PlacementScreen({
   return (
     <section
       aria-label="Ship placement"
-      className="flex flex-col gap-6 bg-background p-6 text-foreground"
+      className="flex w-full max-w-4xl flex-col gap-6 rounded-lg border border-border bg-card p-6 text-foreground shadow-sm"
     >
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Place your fleet</h1>
+      <header className="flex flex-col gap-1 border-b border-border/60 pb-4">
+        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-primary">
+          Setup
+        </span>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Place your fleet
+        </h1>
         <p className="text-sm text-muted-foreground">
           Select a ship, press{' '}
-          <kbd className="rounded border border-border px-1">R</kbd> or Rotate
-          to turn it, then click a cell. {placedCount}/{FLEET.length} ships
-          placed.
+          <kbd className="rounded border border-border bg-muted px-1 font-mono text-xs">
+            R
+          </kbd>{' '}
+          or Rotate to turn it, then click a cell.{' '}
+          <span className="font-medium tabular-nums text-foreground">
+            {placedCount}/{FLEET.length}
+          </span>{' '}
+          ships placed.
         </p>
       </header>
 

@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { CellState, type Coord } from '@/engine/types'
+import { type CellState, type Coord } from '@/engine/types'
 import { cn } from '@/lib/utils'
 import { CellMarker } from './markers'
 
@@ -38,14 +38,9 @@ export const Cell = forwardRef<HTMLDivElement, CellProps>(function Cell(
         if (!disabled) onFire()
       }}
       className={cn(
-        'flex aspect-square w-8 items-center justify-center border border-slate-300 text-sm outline-none dark:border-slate-700',
-        'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-0',
-        state === CellState.Empty && 'bg-sky-50 dark:bg-slate-900',
-        state === CellState.Miss && 'bg-sky-100 dark:bg-slate-800',
-        (state === CellState.Hit || state === CellState.Sunk) &&
-          'bg-red-100 dark:bg-red-950',
-        state === CellState.Ship && 'bg-slate-200 dark:bg-slate-700',
-        disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-95',
+        'relative flex aspect-square w-8 items-center justify-center border text-sm outline-none transition-[filter]',
+        'focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-105',
       )}
     >
       <CellMarker state={state} />

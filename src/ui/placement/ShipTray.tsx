@@ -29,7 +29,7 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
   const placed = new Set(state.boards[Player.Human].ships.map((s) => s.type))
 
   return (
-    <ul aria-label="Fleet" className="flex flex-col gap-2">
+    <ul aria-label="Fleet" className="flex flex-col gap-1.5">
       {FLEET.map((entry) => {
         const isPlaced = placed.has(entry.type)
         const isSelected = selectedType === entry.type
@@ -43,13 +43,13 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
               data-placed={isPlaced || undefined}
               onClick={() => onSelect(entry.type)}
               className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition',
-                'border-border bg-background text-foreground',
+                'flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                'border-border bg-background/60 text-foreground',
                 !isPlaced &&
-                  'hover:border-primary hover:bg-primary/10 cursor-pointer',
+                  'cursor-pointer hover:border-primary/60 hover:bg-primary/5',
                 isSelected &&
-                  'border-primary bg-primary/15 ring-2 ring-primary',
-                isPlaced && 'cursor-not-allowed opacity-60 line-through',
+                  'border-primary/70 bg-primary/10 ring-1 ring-primary/50',
+                isPlaced && 'cursor-not-allowed opacity-55 line-through',
               )}
             >
               <span className="font-medium">{SHIP_LABELS[entry.type]}</span>
@@ -59,10 +59,10 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
               <span
                 data-status={isPlaced ? 'placed' : 'remaining'}
                 className={cn(
-                  'rounded px-1.5 py-0.5 text-xs font-semibold',
+                  'rounded px-1.5 py-0.5 text-[0.7rem] font-medium uppercase tracking-wide',
                   isPlaced
-                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-300',
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-muted text-muted-foreground',
                 )}
               >
                 {isPlaced ? 'Placed' : 'Remaining'}

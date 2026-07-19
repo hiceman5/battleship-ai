@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import {
-  CellState,
   Orientation,
   Player,
   type Coord,
@@ -12,6 +11,7 @@ import { FLEET, cellsFor, isLegalPlacement } from '@/engine'
 import { placeShip, type GameAction } from '@/state/actions'
 import { toLabel } from '@/ui/lib/coord-format'
 import { CellMarker } from '@/ui/board/markers'
+import boardStyles from '@/ui/board/board.module.css'
 import { cn } from '@/lib/utils'
 
 export type PlacementBoardProps = {
@@ -95,7 +95,7 @@ export function PlacementBoard({
       role="grid"
       aria-label="Your waters"
       onMouseLeave={onClearHover}
-      className="inline-grid gap-px bg-slate-300 dark:bg-slate-700"
+      className={cn('inline-grid gap-px', boardStyles.grid)}
       style={{
         gridTemplateColumns: `repeat(${board.width}, minmax(0, 1fr))`,
       }}
@@ -121,15 +121,14 @@ export function PlacementBoard({
               onMouseEnter={() => onHover(coord)}
               onClick={() => handleClick(coord)}
               className={cn(
-                'flex aspect-square w-9 items-center justify-center border border-border text-sm outline-none sm:w-9',
-                'bg-sky-50 dark:bg-slate-900',
-                cell.state === CellState.Ship &&
-                  'bg-slate-200 dark:bg-slate-700',
-                selectedType ? 'cursor-pointer' : 'cursor-default',
+                'relative flex aspect-square w-9 items-center justify-center border text-sm outline-none transition-[filter] sm:w-9',
+                selectedType
+                  ? 'cursor-pointer hover:brightness-105'
+                  : 'cursor-default',
                 ghost === 'valid' &&
-                  'bg-emerald-200/70 ring-2 ring-inset ring-emerald-500 dark:bg-emerald-500/20',
+                  'z-10 bg-teal-200/70 ring-2 ring-inset ring-teal-600 dark:bg-teal-500/25 dark:ring-teal-400',
                 ghost === 'invalid' &&
-                  'bg-red-200/70 ring-2 ring-inset ring-red-500 dark:bg-red-500/20',
+                  'z-10 bg-rose-200/70 ring-2 ring-inset ring-rose-600 dark:bg-rose-500/25 dark:ring-rose-400',
               )}
             >
               <CellMarker state={cell.state} />
