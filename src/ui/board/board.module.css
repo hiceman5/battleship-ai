@@ -1,0 +1,70 @@
+/*
+ * Muted naval re-skin (variant `devin/ui-naval`) — cell fills.
+ *
+ * Scope constraint: this treatment lives entirely under `src/ui/`. The shared
+ * board cells carry a per-cell `data-state`; the signed-off spec applies fills
+ * via global rules in `src/index.css`, which this variant must NOT edit. So we
+ * re-express the fills here, keyed off the SAME `data-state` values, scoped
+ * under `.grid` so specificity cleanly overrides the global defaults in both
+ * light and dark mode. Placement ghost cells (`data-ghost`) keep their own
+ * validity outlines and are excluded. Colorblind-safe marker SHAPES are
+ * unchanged — only low-key, WCAG-AA colors here.
+ */
+
+.grid {
+  /* Soft steel grid lines (shown through the 1px gaps). */
+  background-color: #aebccb;
+  border-radius: 6px;
+  padding: 3px;
+  box-shadow:
+    inset 0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 1px 2px rgba(15, 23, 42, 0.08);
+}
+:global(.dark) .grid {
+  background-color: #22303f;
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 1px 2px rgba(2, 6, 23, 0.4);
+}
+
+/* Water (empty) + miss fill share the calm blue-slate water tone. */
+.grid [role='gridcell'][data-state='empty']:not([data-ghost]),
+.grid [role='gridcell'][data-state='miss']:not([data-ghost]) {
+  background-color: #ccd8e2;
+}
+:global(.dark) .grid [role='gridcell'][data-state='empty']:not([data-ghost]),
+:global(.dark) .grid [role='gridcell'][data-state='miss']:not([data-ghost]) {
+  background-color: #12232f;
+}
+
+/* Own ship — restrained steel block. */
+.grid [role='gridcell'][data-state='ship']:not([data-ghost]) {
+  background-color: #5b6b7c;
+}
+:global(.dark) .grid [role='gridcell'][data-state='ship']:not([data-ghost]) {
+  background-color: #7c8b9a;
+}
+
+/* Hit — muted clay so the ✕ reads without shouting. */
+.grid [role='gridcell'][data-state='hit']:not([data-ghost]) {
+  background-color: #d8c3be;
+}
+:global(.dark) .grid [role='gridcell'][data-state='hit']:not([data-ghost]) {
+  background-color: #3b2624;
+}
+
+/* Sunk — deep navy hull. */
+.grid [role='gridcell'][data-state='sunk']:not([data-ghost]) {
+  background-color: #23303f;
+}
+:global(.dark) .grid [role='gridcell'][data-state='sunk']:not([data-ghost]) {
+  background-color: #060f18;
+}
+
+/* Cell borders — soft hairlines, restrained. */
+.grid [role='gridcell'] {
+  border-color: rgba(71, 85, 105, 0.25);
+}
+:global(.dark) .grid [role='gridcell'] {
+  border-color: rgba(148, 163, 184, 0.14);
+}

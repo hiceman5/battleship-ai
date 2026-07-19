@@ -21,9 +21,10 @@ export type PlacementControlsProps = {
 }
 
 const buttonClass = cn(
-  'rounded-md border border-border px-3 py-2 text-sm font-medium transition',
-  'bg-background text-foreground hover:bg-primary/10 hover:border-primary',
-  'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background disabled:hover:border-border',
+  'rounded-md border border-border px-3 py-2 text-sm font-medium transition-colors',
+  'bg-background/60 text-foreground hover:border-primary/60 hover:bg-primary/5',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+  'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background/60 disabled:hover:border-border',
 )
 
 /**
@@ -85,7 +86,7 @@ export function PlacementControls({
         disabled={!allPlaced}
         className={cn(
           buttonClass,
-          'bg-primary text-primary-foreground hover:bg-primary/90 hover:border-primary',
+          'border-primary bg-primary text-primary-foreground shadow-sm hover:border-primary hover:bg-primary/90',
         )}
       >
         Start

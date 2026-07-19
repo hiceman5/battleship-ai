@@ -19,7 +19,10 @@ function DotMarker({ className }: MarkerProps) {
     <svg
       data-marker="dot"
       viewBox="0 0 24 24"
-      className={cn('h-2.5 w-2.5 text-slate-400', className)}
+      className={cn(
+        'h-2.5 w-2.5 text-[#3f5164] dark:text-[#7f93a6]',
+        className,
+      )}
       aria-hidden="true"
       focusable="false"
     >
@@ -34,7 +37,7 @@ function CrossMarker({ className }: MarkerProps) {
     <svg
       data-marker="cross"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-600 dark:text-red-400', className)}
+      className={cn('h-4 w-4 text-[#7a2f2a] dark:text-[#d7a49e]', className)}
       aria-hidden="true"
       focusable="false"
     >
@@ -55,7 +58,7 @@ function BurstMarker({ className }: MarkerProps) {
     <svg
       data-marker="burst"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-800 dark:text-red-300', className)}
+      className={cn('h-4 w-4 text-[#cbd6df] dark:text-[#7f95a8]', className)}
       aria-hidden="true"
       focusable="false"
     >
@@ -74,7 +77,7 @@ function ShipMarker({ className }: MarkerProps) {
       data-marker="ship"
       viewBox="0 0 24 24"
       className={cn(
-        'h-3.5 w-3.5 text-slate-600 dark:text-slate-300',
+        'h-3.5 w-3.5 text-[#cfd8e0] dark:text-[#253440]',
         className,
       )}
       aria-hidden="true"

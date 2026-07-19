@@ -3,6 +3,7 @@ import { CellState, type Coord } from '@/engine/types'
 import { cn } from '@/lib/utils'
 import { toLabel } from '@/ui/lib/coord-format'
 import { Cell } from './Cell'
+import styles from './board.module.css'
 
 /** Cell states that represent a cell that has already been fired upon. */
 const FIRED_STATES: ReadonlySet<CellState> = new Set([
@@ -121,10 +122,7 @@ export function BoardGrid({
       aria-label={label}
       aria-disabled={!interactive || undefined}
       onKeyDown={handleKeyDown}
-      className={cn(
-        'inline-grid gap-px bg-slate-300 dark:bg-slate-700',
-        className,
-      )}
+      className={cn('inline-grid gap-px', styles.grid, className)}
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
     >
       {cells.map((row, r) =>
