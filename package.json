@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "vite-node src/ai/benchmark.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.0",
