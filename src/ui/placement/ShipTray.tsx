@@ -29,7 +29,14 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
   const placed = new Set(state.boards[Player.Human].ships.map((s) => s.type))
 
   return (
-    <ul aria-label="Fleet" className="flex flex-col gap-2">
+    <ul
+      aria-label="Fleet"
+      className={cn(
+        'flex flex-col gap-2 rounded-2xl border-[3px] border-black bg-cyan-50 p-3',
+        'shadow-[6px_6px_0_0_rgba(0,0,0,1)]',
+        'dark:border-white dark:bg-slate-900 dark:shadow-[6px_6px_0_0_rgba(255,255,255,0.9)]',
+      )}
+    >
       {FLEET.map((entry) => {
         const isPlaced = placed.has(entry.type)
         const isSelected = selectedType === entry.type
@@ -43,26 +50,31 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
               data-placed={isPlaced || undefined}
               onClick={() => onSelect(entry.type)}
               className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition',
-                'border-border bg-background text-foreground',
+                'flex w-full items-center justify-between gap-3 rounded-xl border-[3px] px-3 py-2 text-left text-sm font-extrabold transition-all',
+                'border-black bg-white text-slate-900 shadow-[3px_3px_0_0_rgba(0,0,0,1)]',
+                'dark:border-white dark:bg-slate-800 dark:text-white dark:shadow-[3px_3px_0_0_rgba(255,255,255,0.85)]',
+                'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-500',
                 !isPlaced &&
-                  'hover:border-primary hover:bg-primary/10 cursor-pointer',
+                  'cursor-pointer hover:-translate-y-0.5 hover:bg-yellow-100 dark:hover:bg-slate-700',
                 isSelected &&
-                  'border-primary bg-primary/15 ring-2 ring-primary',
-                isPlaced && 'cursor-not-allowed opacity-60 line-through',
+                  '-translate-y-0.5 bg-fuchsia-600 text-white shadow-[3px_3px_0_0_rgba(0,0,0,1)] dark:bg-fuchsia-500 dark:text-white',
+                isPlaced &&
+                  'cursor-not-allowed opacity-60 line-through shadow-none',
               )}
             >
-              <span className="font-medium">{SHIP_LABELS[entry.type]}</span>
-              <span className="text-xs tabular-nums opacity-70">
-                {'▮'.repeat(entry.size)} {entry.size}
+              <span className="shrink-0 uppercase tracking-wide">
+                {SHIP_LABELS[entry.type]}
+              </span>
+              <span className="min-w-0 shrink truncate text-xs tabular-nums opacity-80">
+                {entry.size} {'▮'.repeat(entry.size)}
               </span>
               <span
                 data-status={isPlaced ? 'placed' : 'remaining'}
                 className={cn(
-                  'rounded px-1.5 py-0.5 text-xs font-semibold',
+                  'shrink-0 whitespace-nowrap rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase',
                   isPlaced
-                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-300',
+                    ? 'border-emerald-700 bg-emerald-400 text-emerald-950'
+                    : 'border-black bg-yellow-300 text-black dark:border-white',
                 )}
               >
                 {isPlaced ? 'Placed' : 'Remaining'}

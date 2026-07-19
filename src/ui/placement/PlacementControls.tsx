@@ -3,6 +3,11 @@ import { Orientation, Player, type GameState } from '@/engine/types'
 import { FLEET, generateRandomLayout, type Rng } from '@/engine'
 import { clear, placeShip, start, type GameAction } from '@/state/actions'
 import { cn } from '@/lib/utils'
+import {
+  arcadeButton,
+  arcadeButtonNeutral,
+  arcadeButtonPrimary,
+} from '@/ui/lib/arcade'
 
 export type PlacementControlsProps = {
   readonly state: GameState
@@ -20,11 +25,7 @@ export type PlacementControlsProps = {
   readonly rng?: Rng
 }
 
-const buttonClass = cn(
-  'rounded-md border border-border px-3 py-2 text-sm font-medium transition',
-  'bg-background text-foreground hover:bg-primary/10 hover:border-primary',
-  'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-background disabled:hover:border-border',
-)
+const buttonClass = cn(arcadeButton, arcadeButtonNeutral)
 
 /**
  * The Setup-phase action bar (SPEC §3.2): rotate the pending ship, randomize a
@@ -83,10 +84,7 @@ export function PlacementControls({
         type="button"
         onClick={handleStart}
         disabled={!allPlaced}
-        className={cn(
-          buttonClass,
-          'bg-primary text-primary-foreground hover:bg-primary/90 hover:border-primary',
-        )}
+        className={cn(arcadeButton, arcadeButtonPrimary, 'px-6 text-base')}
       >
         Start
       </button>

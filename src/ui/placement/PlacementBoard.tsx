@@ -12,6 +12,7 @@ import { FLEET, cellsFor, isLegalPlacement } from '@/engine'
 import { placeShip, type GameAction } from '@/state/actions'
 import { toLabel } from '@/ui/lib/coord-format'
 import { CellMarker } from '@/ui/board/markers'
+import cellStyles from '@/ui/board/cell.module.css'
 import { cn } from '@/lib/utils'
 
 export type PlacementBoardProps = {
@@ -95,7 +96,11 @@ export function PlacementBoard({
       role="grid"
       aria-label="Your waters"
       onMouseLeave={onClearHover}
-      className="inline-grid gap-px bg-slate-300 dark:bg-slate-700"
+      className={cn(
+        'inline-grid gap-[3px] rounded-2xl border-[3px] border-black bg-black p-[3px]',
+        'shadow-[6px_6px_0_0_rgba(0,0,0,1)]',
+        'dark:border-white dark:bg-white dark:shadow-[6px_6px_0_0_rgba(255,255,255,0.9)]',
+      )}
       style={{
         gridTemplateColumns: `repeat(${board.width}, minmax(0, 1fr))`,
       }}
@@ -121,15 +126,16 @@ export function PlacementBoard({
               onMouseEnter={() => onHover(coord)}
               onClick={() => handleClick(coord)}
               className={cn(
-                'flex aspect-square w-9 items-center justify-center border border-border text-sm outline-none sm:w-9',
-                'bg-sky-50 dark:bg-slate-900',
-                cell.state === CellState.Ship &&
-                  'bg-slate-200 dark:bg-slate-700',
-                selectedType ? 'cursor-pointer' : 'cursor-default',
+                'flex aspect-square w-9 items-center justify-center rounded-[3px] text-sm outline-none transition-transform sm:w-9',
+                !ghost && cell.state === CellState.Ship && cellStyles.ship,
+                !ghost && cell.state !== CellState.Ship && cellStyles.empty,
+                selectedType
+                  ? 'cursor-pointer hover:z-10 hover:ring-2 hover:ring-inset hover:ring-yellow-300'
+                  : 'cursor-default',
                 ghost === 'valid' &&
-                  'bg-emerald-200/70 ring-2 ring-inset ring-emerald-500 dark:bg-emerald-500/20',
+                  'z-10 scale-105 bg-emerald-300 ring-[3px] ring-inset ring-emerald-600 dark:bg-emerald-500/40 dark:ring-emerald-400',
                 ghost === 'invalid' &&
-                  'bg-red-200/70 ring-2 ring-inset ring-red-500 dark:bg-red-500/20',
+                  'z-10 scale-105 bg-red-300 ring-[3px] ring-inset ring-red-600 dark:bg-red-500/40 dark:ring-red-400',
               )}
             >
               <CellMarker state={cell.state} />

@@ -6,6 +6,8 @@ import { ShipTray } from './ShipTray'
 import { PlacementBoard } from './PlacementBoard'
 import { PlacementControls } from './PlacementControls'
 import { usePlacement } from './usePlacement'
+import { arcadeHeadline } from '@/ui/lib/arcade'
+import { cn } from '@/lib/utils'
 
 export type PlacementScreenProps = {
   readonly state: GameState
@@ -54,20 +56,28 @@ export function PlacementScreen({
   return (
     <section
       aria-label="Ship placement"
-      className="flex flex-col gap-6 bg-background p-6 text-foreground"
+      className="flex w-full max-w-5xl flex-col gap-6 p-2 text-slate-900 dark:text-slate-50 sm:p-4"
     >
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Place your fleet</h1>
-        <p className="text-sm text-muted-foreground">
+      <header className="flex flex-col gap-2">
+        <h1 className={cn(arcadeHeadline, 'text-3xl sm:text-4xl')}>
+          <span className="text-fuchsia-600 dark:text-fuchsia-400">Place</span>{' '}
+          your fleet
+        </h1>
+        <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
           Select a ship, press{' '}
-          <kbd className="rounded border border-border px-1">R</kbd> or Rotate
-          to turn it, then click a cell. {placedCount}/{FLEET.length} ships
-          placed.
+          <kbd className="rounded-md border-2 border-black bg-yellow-300 px-1.5 font-black text-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] dark:border-white">
+            R
+          </kbd>{' '}
+          or Rotate to turn it, then click a cell.{' '}
+          <span className="rounded-full bg-fuchsia-600 px-2 py-0.5 font-black text-white">
+            {placedCount}/{FLEET.length}
+          </span>{' '}
+          ships placed.
         </p>
       </header>
 
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        <div className="md:w-56 md:shrink-0">
+        <div className="md:w-64 md:shrink-0">
           <ShipTray
             state={state}
             selectedType={selectedType}

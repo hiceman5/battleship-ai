@@ -122,7 +122,9 @@ export function BoardGrid({
       aria-disabled={!interactive || undefined}
       onKeyDown={handleKeyDown}
       className={cn(
-        'inline-grid gap-px bg-slate-300 dark:bg-slate-700',
+        'inline-grid gap-[3px] rounded-2xl border-[3px] border-black bg-black p-[3px]',
+        'shadow-[6px_6px_0_0_rgba(0,0,0,1)]',
+        'dark:border-white dark:bg-white dark:shadow-[6px_6px_0_0_rgba(255,255,255,0.9)]',
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}

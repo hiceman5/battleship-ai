@@ -1,0 +1,40 @@
+/*
+ * ARCADE cell fills (SPEC §10 states, re-expressed inside src/ui).
+ *
+ * The signed-off palette lives as UNLAYERED global rules in src/index.css keyed
+ * off [role="gridcell"][data-state=...]. This variant may not edit that file, so
+ * these module classes re-express the same states with vivid, high-contrast
+ * arcade fills. `!important` is required to win over the unlayered global rule
+ * (equal-ish specificity, no cascade layer). Marker SHAPES (dot/cross/burst/
+ * square) still come from markers.tsx, so colorblind-safe distinctions hold.
+ */
+
+.empty,
+.miss {
+  background-color: #bae6fd !important; /* bright arcade water */
+}
+:global(.dark) .empty,
+:global(.dark) .miss {
+  background-color: #0b3a5c !important;
+}
+
+.ship {
+  background-color: #4f46e5 !important; /* bold indigo hull */
+}
+:global(.dark) .ship {
+  background-color: #818cf8 !important;
+}
+
+.hit {
+  background-color: #ef4444 !important; /* punchy red */
+}
+:global(.dark) .hit {
+  background-color: #b91c1c !important;
+}
+
+.sunk {
+  background-color: #0b1020 !important; /* dramatic near-black */
+}
+:global(.dark) .sunk {
+  background-color: #000000 !important;
+}
