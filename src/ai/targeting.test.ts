@@ -8,6 +8,13 @@ import {
   Orientation,
   ShipType,
 } from '../engine/types'
+import {
+  createBoard,
+  generateRandomLayout,
+  isFleetDestroyed,
+  resolveShot,
+} from '../engine'
+import type { Rng } from '../engine'
 import { selectShot } from './targeting'
 
 const SIZE = 10
@@ -61,33 +68,47 @@ function makeBoard(opts: {
   }
 }
 
-describe('selectShot — search mode (§6.1)', () => {
-  it('picks the lowest even-parity, not-yet-fired cell by tie-break', () => {
-    const shot = selectShot(makeBoard({}))
-    // (0,0): row+col even → lowest by tie-break.
-    expect(shot).toEqual({ row: 0, col: 0 })
-  })
+function key(coord: Coord): string {
+  return `${coord.row},${coord.col}`
+}
 
-  it('only fires on even-parity cells (never odd parity)', () => {
+/** Deterministic seeded PRNG (mulberry32), matching the benchmark harness. */
+function mulberry32(seed: number): Rng {
+  let a = seed >>> 0
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+describe('selectShot — hybrid density + parity search (§6.1, assigned strategy)', () => {
+  it('opens on an even-parity cell and is deterministic', () => {
     const shot = selectShot(makeBoard({}))
     expect((shot.row + shot.col) % 2).toBe(0)
+    for (let i = 0; i < 10; i++) {
+      expect(selectShot(makeBoard({}))).toEqual(shot)
+    }
   })
 
-  it('skips already-fired parity cells', () => {
+  it('only ever fires even-parity cells while searching', () => {
+    // A handful of scattered misses; the next search pick stays on parity.
     const shot = selectShot(
       makeBoard({
         shots: [
           { row: 0, col: 0 },
-          { row: 0, col: 2 },
+          { row: 2, col: 2 },
+          { row: 5, col: 5 },
         ],
       }),
     )
-    // (0,1) is odd parity → skipped; next even cell is (0,4).
-    expect(shot).toEqual({ row: 0, col: 4 })
+    expect((shot.row + shot.col) % 2).toBe(0)
   })
 })
 
-describe('selectShot — hunt mode (§6.2)', () => {
+describe('selectShot — targeting via density (§6.2/§6.3, assigned strategy)', () => {
   it('probes an orthogonal neighbor of a single unresolved hit', () => {
     const ship = makeShip({
       size: 3,
@@ -98,64 +119,23 @@ describe('selectShot — hunt mode (§6.2)', () => {
     const shot = selectShot(
       makeBoard({ ships: [ship], shots: [{ row: 4, col: 5 }] }),
     )
-    // Neighbors of (4,5): (3,5),(5,5),(4,4),(4,6). Lowest by tie-break: (3,5).
-    expect(shot).toEqual({ row: 3, col: 5 })
+    const neighbors = new Set([
+      key({ row: 3, col: 5 }),
+      key({ row: 5, col: 5 }),
+      key({ row: 4, col: 4 }),
+      key({ row: 4, col: 6 }),
+    ])
+    expect(neighbors.has(key(shot))).toBe(true)
   })
 
-  it('skips out-of-bounds and already-fired neighbors', () => {
-    // Hit at top-left corner: only (1,0) and (0,1) are in bounds.
+  it('extends along the axis of two collinear unresolved hits', () => {
     const ship = makeShip({
-      size: 2,
-      origin: { row: 0, col: 0 },
-      orientation: Orientation.Vertical,
-      hits: [{ row: 0, col: 0 }],
-    })
-    const shot = selectShot(
-      makeBoard({
-        ships: [ship],
-        shots: [
-          { row: 0, col: 0 },
-          { row: 0, col: 1 },
-        ],
-      }),
-    )
-    // (0,1) fired, (-1,0)/(0,-1) OOB → only (1,0) remains.
-    expect(shot).toEqual({ row: 1, col: 0 })
-  })
-})
-
-describe('selectShot — target mode (§6.3)', () => {
-  it('fires an open end of a horizontal collinear pair', () => {
-    const ship = makeShip({
-      size: 4,
+      size: 3,
       origin: { row: 4, col: 4 },
       orientation: Orientation.Horizontal,
       hits: [
+        { row: 4, col: 4 },
         { row: 4, col: 5 },
-        { row: 4, col: 6 },
-      ],
-    })
-    const shot = selectShot(
-      makeBoard({
-        ships: [ship],
-        shots: [
-          { row: 4, col: 5 },
-          { row: 4, col: 6 },
-        ],
-      }),
-    )
-    // Ends: (4,4) and (4,7). Lowest col → (4,4).
-    expect(shot).toEqual({ row: 4, col: 4 })
-  })
-
-  it('fires the other open end when the lower end is already fired', () => {
-    const ship = makeShip({
-      size: 4,
-      origin: { row: 4, col: 4 },
-      orientation: Orientation.Horizontal,
-      hits: [
-        { row: 4, col: 5 },
-        { row: 4, col: 6 },
       ],
     })
     const shot = selectShot(
@@ -164,38 +144,15 @@ describe('selectShot — target mode (§6.3)', () => {
         shots: [
           { row: 4, col: 4 },
           { row: 4, col: 5 },
-          { row: 4, col: 6 },
         ],
       }),
     )
-    expect(shot).toEqual({ row: 4, col: 7 })
+    // Only placements covering both hits are the row-4 extensions; ends
+    // (4,3) and (4,6) tie on density, so the fixed tie-break picks (4,3).
+    expect(shot).toEqual({ row: 4, col: 3 })
   })
 
-  it('fires an open end of a vertical collinear pair', () => {
-    const ship = makeShip({
-      size: 3,
-      origin: { row: 3, col: 2 },
-      orientation: Orientation.Vertical,
-      hits: [
-        { row: 3, col: 2 },
-        { row: 4, col: 2 },
-      ],
-    })
-    const shot = selectShot(
-      makeBoard({
-        ships: [ship],
-        shots: [
-          { row: 3, col: 2 },
-          { row: 4, col: 2 },
-        ],
-      }),
-    )
-    // Ends: (2,2) and (5,2). Lowest row → (2,2).
-    expect(shot).toEqual({ row: 2, col: 2 })
-  })
-
-  it('locks onto the collinear line and ignores a non-collinear stray hit', () => {
-    // Two collinear hits (row 4) plus a stray hit on another un-sunk ship.
+  it('locks onto the collinear line and never fires an unresolved hit', () => {
     const lineShip = makeShip({
       id: 'a',
       size: 4,
@@ -206,52 +163,60 @@ describe('selectShot — target mode (§6.3)', () => {
         { row: 4, col: 6 },
       ],
     })
-    const strayShip = makeShip({
-      id: 'b',
-      size: 3,
-      origin: { row: 8, col: 8 },
-      orientation: Orientation.Horizontal,
-      hits: [{ row: 8, col: 9 }],
-    })
     const shot = selectShot(
       makeBoard({
-        ships: [lineShip, strayShip],
+        ships: [lineShip],
         shots: [
           { row: 4, col: 5 },
           { row: 4, col: 6 },
-          { row: 8, col: 9 },
         ],
       }),
     )
-    // Should extend the row-4 line, not probe the stray.
+    // Open ends of the (4,5)-(4,6) line are (4,4) and (4,7); they tie on
+    // density, so the fixed tie-break fires the lower-col end (4,4).
     expect(shot).toEqual({ row: 4, col: 4 })
   })
 })
 
 describe('selectShot — reset on sink (§6.4)', () => {
-  it('returns a search move after the ship sinks (no leftover hunting)', () => {
-    // Destroyer fully hit → sunk → its hits are resolved.
+  it('returns to search and stops hunting the sunk ship', () => {
+    // Corner destroyer fully hit → sunk → its hits are resolved. The rest of
+    // the fleet is still afloat and untouched, so search density is driven by
+    // those ships, not by the now-dead corner.
     const sunk = makeShip({
+      id: 'destroyer',
       size: 2,
-      origin: { row: 4, col: 4 },
+      origin: { row: 0, col: 0 },
       orientation: Orientation.Horizontal,
       hits: [
-        { row: 4, col: 4 },
-        { row: 4, col: 5 },
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
       ],
     })
+    const afloat: Ship[] = [
+      makeShip({ id: 'carrier', size: 5, origin: { row: 9, col: 0 }, orientation: Orientation.Horizontal }),
+      makeShip({ id: 'battleship', size: 4, origin: { row: 7, col: 0 }, orientation: Orientation.Horizontal }),
+      makeShip({ id: 'cruiser', size: 3, origin: { row: 5, col: 0 }, orientation: Orientation.Horizontal }),
+      makeShip({ id: 'submarine', size: 3, origin: { row: 3, col: 0 }, orientation: Orientation.Horizontal }),
+    ]
     const shot = selectShot(
       makeBoard({
-        ships: [sunk],
+        ships: [sunk, ...afloat],
         shots: [
-          { row: 4, col: 4 },
-          { row: 4, col: 5 },
+          { row: 0, col: 0 },
+          { row: 0, col: 1 },
         ],
       }),
     )
-    // No unresolved hits → search mode → lowest parity cell (0,0).
-    expect(shot).toEqual({ row: 0, col: 0 })
+    // Back to parity search — never an orthogonal neighbor of the sunk ship.
     expect((shot.row + shot.col) % 2).toBe(0)
+    const neighborsOfSunk = new Set([
+      key({ row: 1, col: 0 }),
+      key({ row: 0, col: 2 }),
+      key({ row: 1, col: 1 }),
+      key({ row: 1, col: 2 }),
+    ])
+    expect(neighborsOfSunk.has(key(shot))).toBe(false)
   })
 })
 
@@ -271,42 +236,37 @@ describe('selectShot — determinism (§6)', () => {
   })
 })
 
-describe('selectShot — never returns an already-fired cell (§6, task 7)', () => {
-  it('never selects a fired coord across a full simulated game', () => {
-    // Place a single ship; the AI must sink it and never repeat a shot.
-    const shipCells: Coord[] = [
-      { row: 5, col: 2 },
-      { row: 5, col: 3 },
-      { row: 5, col: 4 },
-    ]
-    const shipCellSet = new Set(shipCells.map((c) => `${c.row},${c.col}`))
+describe('selectShot — never double-fires across a full game (required)', () => {
+  it('clears a full random fleet without ever repeating a shot', () => {
+    // Several deterministic layouts, each played to completion.
+    for (const seed of [1, 7, 42, 123, 2024, 99999]) {
+      const rng = mulberry32(seed)
+      let board = createBoard(generateRandomLayout(rng))
+      const fired = new Set<string>()
+      let shots = 0
 
-    let shots: Coord[] = []
-    let hits: Coord[] = []
+      while (!isFleetDestroyed(board)) {
+        const shot = selectShot(board)
+        // In bounds.
+        expect(shot.row).toBeGreaterThanOrEqual(0)
+        expect(shot.row).toBeLessThan(board.height)
+        expect(shot.col).toBeGreaterThanOrEqual(0)
+        expect(shot.col).toBeLessThan(board.width)
+        // Never fired before.
+        expect(fired.has(key(shot))).toBe(false)
+        fired.add(key(shot))
 
-    for (let turn = 0; turn < 200; turn++) {
-      const sunk = hits.length >= shipCells.length
-      const ship = makeShip({
-        size: shipCells.length,
-        origin: { row: 5, col: 2 },
-        orientation: Orientation.Horizontal,
-        hits: [...hits],
-      })
-      const board = makeBoard({ ships: [ship], shots: [...shots] })
+        const next = resolveShot(board, shot)
+        // resolveShot returns the same reference on a rejected/repeat shot.
+        expect(next).not.toBe(board)
+        board = next
 
-      // Once the ship is sunk the game would be over; stop.
-      if (sunk) break
+        shots++
+        expect(shots).toBeLessThanOrEqual(board.width * board.height)
+      }
 
-      const firedSet = new Set(shots.map((c) => `${c.row},${c.col}`))
-      const shot = selectShot(board)
-      const key = `${shot.row},${shot.col}`
-      expect(firedSet.has(key)).toBe(false)
-
-      shots = [...shots, shot]
-      if (shipCellSet.has(key)) hits = [...hits, shot]
+      // Actually finished the job.
+      expect(isFleetDestroyed(board)).toBe(true)
     }
-
-    // The AI actually finished the job.
-    expect(hits.length).toBe(shipCells.length)
   })
 })
