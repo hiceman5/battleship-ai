@@ -29,48 +29,65 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
   const placed = new Set(state.boards[Player.Human].ships.map((s) => s.type))
 
   return (
-    <ul aria-label="Fleet" className="flex flex-col gap-2">
-      {FLEET.map((entry) => {
-        const isPlaced = placed.has(entry.type)
-        const isSelected = selectedType === entry.type
-        return (
-          <li key={entry.type}>
-            <button
-              type="button"
-              disabled={isPlaced}
-              aria-pressed={isSelected}
-              data-ship={entry.type}
-              data-placed={isPlaced || undefined}
-              onClick={() => onSelect(entry.type)}
-              className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition',
-                'border-border bg-background text-foreground',
-                !isPlaced &&
-                  'hover:border-primary hover:bg-primary/10 cursor-pointer',
-                isSelected &&
-                  'border-primary bg-primary/15 ring-2 ring-primary',
-                isPlaced && 'cursor-not-allowed opacity-60 line-through',
-              )}
+    <div className="flex flex-col gap-3">
+      <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+        Fleet
+      </h2>
+      <ul aria-label="Fleet" className="flex flex-col">
+        {FLEET.map((entry) => {
+          const isPlaced = placed.has(entry.type)
+          const isSelected = selectedType === entry.type
+          return (
+            <li
+              key={entry.type}
+              className="border-b border-neutral-200 last:border-b-0 dark:border-neutral-800"
             >
-              <span className="font-medium">{SHIP_LABELS[entry.type]}</span>
-              <span className="text-xs tabular-nums opacity-70">
-                {'▮'.repeat(entry.size)} {entry.size}
-              </span>
-              <span
-                data-status={isPlaced ? 'placed' : 'remaining'}
+              <button
+                type="button"
+                disabled={isPlaced}
+                aria-pressed={isSelected}
+                data-ship={entry.type}
+                data-placed={isPlaced || undefined}
+                onClick={() => onSelect(entry.type)}
                 className={cn(
-                  'rounded px-1.5 py-0.5 text-xs font-semibold',
-                  isPlaced
-                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-slate-500/15 text-slate-600 dark:text-slate-300',
+                  'group flex w-full items-center justify-between gap-3 border-l-2 px-3 py-3 text-left transition-colors',
+                  'border-l-transparent text-foreground',
+                  !isPlaced &&
+                    'cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900',
+                  isSelected &&
+                    'border-l-neutral-900 bg-neutral-100 dark:border-l-neutral-100 dark:bg-neutral-900',
+                  isPlaced && 'cursor-not-allowed opacity-45',
                 )}
               >
-                {isPlaced ? 'Placed' : 'Remaining'}
-              </span>
-            </button>
-          </li>
-        )
-      })}
-    </ul>
+                <span className="flex flex-col gap-0.5">
+                  <span
+                    className={cn(
+                      'text-sm font-semibold tracking-tight',
+                      isPlaced && 'line-through',
+                    )}
+                  >
+                    {SHIP_LABELS[entry.type]}
+                  </span>
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {'▮'.repeat(entry.size)} {entry.size}
+                  </span>
+                </span>
+                <span
+                  data-status={isPlaced ? 'placed' : 'remaining'}
+                  className={cn(
+                    'text-[0.65rem] font-semibold uppercase tracking-wider',
+                    isPlaced
+                      ? 'text-foreground'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {isPlaced ? '● Placed' : '○ Remaining'}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }

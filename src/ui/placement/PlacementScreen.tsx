@@ -54,19 +54,32 @@ export function PlacementScreen({
   return (
     <section
       aria-label="Ship placement"
-      className="flex flex-col gap-6 bg-background p-6 text-foreground"
+      className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-2 py-8 text-foreground"
     >
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Place your fleet</h1>
-        <p className="text-sm text-muted-foreground">
+      <header className="flex flex-col gap-3 border-b border-neutral-200 pb-6 dark:border-neutral-800">
+        <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+          Setup
+        </span>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Place your fleet
+        </h1>
+        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
           Select a ship, press{' '}
-          <kbd className="rounded border border-border px-1">R</kbd> or Rotate
-          to turn it, then click a cell. {placedCount}/{FLEET.length} ships
-          placed.
+          <kbd className="rounded-sm border border-neutral-300 px-1.5 font-mono text-xs dark:border-neutral-700">
+            R
+          </kbd>{' '}
+          or Rotate to turn it, then click a cell.
+        </p>
+        <p className="text-sm font-medium tabular-nums">
+          <span className="text-2xl font-bold">{placedCount}</span>
+          <span className="text-muted-foreground">
+            {' '}
+            / {FLEET.length} ships placed
+          </span>
         </p>
       </header>
 
-      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+      <div className="flex flex-col gap-10 md:flex-row md:items-start">
         <div className="md:w-56 md:shrink-0">
           <ShipTray
             state={state}

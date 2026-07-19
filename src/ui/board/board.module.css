@@ -1,0 +1,25 @@
+/*
+ * Near-monochrome, typography-led re-skin (src/ui only).
+ *
+ * The shared, read-only board cells carry a per-cell `data-state` and receive
+ * their fills from unlayered global rules in `src/index.css` (out of scope to
+ * edit). We re-express those fills WITHIN src/ui by exposing dark-aware
+ * greyscale CSS variables here and consuming them through inline styles on the
+ * cells (inline styles win over the global `background-color` rule). Dark mode
+ * is driven by the document `.dark` class, kept fully working.
+ */
+.grid {
+  --ui-water: #f2f2f2;
+  --ui-ship: #52525b;
+  --ui-hit: #d4d4d8;
+  --ui-sunk: #171717;
+  --ui-gap: #d4d4d8;
+}
+
+:global(.dark) .grid {
+  --ui-water: #1a1a1a;
+  --ui-ship: #a1a1aa;
+  --ui-hit: #52525b;
+  --ui-sunk: #f5f5f5;
+  --ui-gap: #3f3f46;
+}

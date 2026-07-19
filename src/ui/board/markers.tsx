@@ -13,17 +13,24 @@ type MarkerProps = {
   readonly className?: string
 }
 
-/** Miss: a small dot. */
+/** Miss: a hollow, hairline-outlined dot. */
 function DotMarker({ className }: MarkerProps) {
   return (
     <svg
       data-marker="dot"
       viewBox="0 0 24 24"
-      className={cn('h-2.5 w-2.5 text-slate-400', className)}
+      className={cn('h-2.5 w-2.5 text-neutral-500 dark:text-neutral-400', className)}
       aria-hidden="true"
       focusable="false"
     >
-      <circle cx="12" cy="12" r="6" fill="currentColor" />
+      <circle
+        cx="12"
+        cy="12"
+        r="6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      />
     </svg>
   )
 }
@@ -34,7 +41,7 @@ function CrossMarker({ className }: MarkerProps) {
     <svg
       data-marker="cross"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-600 dark:text-red-400', className)}
+      className={cn('h-4 w-4 text-neutral-900 dark:text-neutral-100', className)}
       aria-hidden="true"
       focusable="false"
     >
@@ -55,7 +62,7 @@ function BurstMarker({ className }: MarkerProps) {
     <svg
       data-marker="burst"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-800 dark:text-red-300', className)}
+      className={cn('h-4 w-4 text-neutral-50 dark:text-neutral-900', className)}
       aria-hidden="true"
       focusable="false"
     >
@@ -74,7 +81,7 @@ function ShipMarker({ className }: MarkerProps) {
       data-marker="ship"
       viewBox="0 0 24 24"
       className={cn(
-        'h-3.5 w-3.5 text-slate-600 dark:text-slate-300',
+        'h-3.5 w-3.5 text-neutral-50 dark:text-neutral-900',
         className,
       )}
       aria-hidden="true"

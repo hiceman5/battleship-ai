@@ -12,6 +12,7 @@ import { FLEET, cellsFor, isLegalPlacement } from '@/engine'
 import { placeShip, type GameAction } from '@/state/actions'
 import { toLabel } from '@/ui/lib/coord-format'
 import { CellMarker } from '@/ui/board/markers'
+import boardStyles from '@/ui/board/board.module.css'
 import { cn } from '@/lib/utils'
 
 export type PlacementBoardProps = {
@@ -51,8 +52,9 @@ function pendingShipAt(
 
 /**
  * The human's board during Setup (SPEC §3.2). Renders the placed fleet plus a
- * ghost preview of the pending ship at the hovered cell: emerald when the
- * placement is engine-legal, red hatch when illegal. Clicking a cell dispatches
+ * ghost preview of the pending ship at the hovered cell: a solid hairline ring
+ * when the placement is engine-legal, a dashed outline when illegal (shape, not
+ * hue, distinguishes the two — colorblind-safe). Clicking a cell dispatches
  * `PLACE_SHIP` ONLY when `isLegalPlacement` passes — illegal targets are never
  * committed and simply surface the invalid indicator. Contains no game rules.
  */
@@ -95,9 +97,10 @@ export function PlacementBoard({
       role="grid"
       aria-label="Your waters"
       onMouseLeave={onClearHover}
-      className="inline-grid gap-px bg-slate-300 dark:bg-slate-700"
+      className={cn('inline-grid gap-px', boardStyles.grid)}
       style={{
         gridTemplateColumns: `repeat(${board.width}, minmax(0, 1fr))`,
+        backgroundColor: 'var(--ui-gap, #d4d4d8)',
       }}
     >
       {board.cells.map((row, r) =>
@@ -120,16 +123,20 @@ export function PlacementBoard({
               data-ghost={ghost}
               onMouseEnter={() => onHover(coord)}
               onClick={() => handleClick(coord)}
+              style={{
+                backgroundColor:
+                  cell.state === CellState.Ship
+                    ? 'var(--ui-ship, #52525b)'
+                    : 'var(--ui-water, #f2f2f2)',
+              }}
               className={cn(
-                'flex aspect-square w-9 items-center justify-center border border-border text-sm outline-none sm:w-9',
-                'bg-sky-50 dark:bg-slate-900',
-                cell.state === CellState.Ship &&
-                  'bg-slate-200 dark:bg-slate-700',
+                'flex aspect-square w-9 items-center justify-center border text-sm outline-none sm:w-9',
+                'border-neutral-300 dark:border-neutral-700',
                 selectedType ? 'cursor-pointer' : 'cursor-default',
                 ghost === 'valid' &&
-                  'bg-emerald-200/70 ring-2 ring-inset ring-emerald-500 dark:bg-emerald-500/20',
+                  'ring-2 ring-inset ring-neutral-900 dark:ring-neutral-100',
                 ghost === 'invalid' &&
-                  'bg-red-200/70 ring-2 ring-inset ring-red-500 dark:bg-red-500/20',
+                  'opacity-60 outline outline-2 -outline-offset-2 outline-dashed outline-neutral-500 dark:outline-neutral-400',
               )}
             >
               <CellMarker state={cell.state} />

@@ -56,45 +56,53 @@ export function GameOverScreen({
   const accuracyPct = Math.round(stats.accuracy * 100)
 
   return (
-    <div className="flex flex-col items-center gap-6 text-slate-900 dark:text-slate-200">
-      <h1
-        ref={headingRef}
-        tabIndex={-1}
-        className="text-4xl font-bold tracking-tight outline-none"
-      >
-        {humanWon ? 'You win!' : 'You lose'}
-      </h1>
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 py-8 text-foreground">
+      <div className="flex flex-col items-center gap-3 border-b border-neutral-200 pb-8 dark:border-neutral-800">
+        <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+          Game over
+        </span>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-5xl font-bold tracking-tight outline-none sm:text-6xl"
+        >
+          {humanWon ? 'You win!' : 'You lose'}
+        </h1>
+      </div>
 
-      <dl className="flex gap-8 text-center" aria-label="Your firing summary">
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <dl
+        className="grid grid-cols-3 divide-x divide-neutral-200 dark:divide-neutral-800"
+        aria-label="Your firing summary"
+      >
+        <div className="flex flex-col items-center gap-1 px-8">
+          <dt className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
             Shots
           </dt>
-          <dd className="text-2xl font-semibold">{stats.shots}</dd>
+          <dd className="text-4xl font-bold tabular-nums">{stats.shots}</dd>
         </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center gap-1 px-8">
+          <dt className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
             Hits
           </dt>
-          <dd className="text-2xl font-semibold">{stats.hits}</dd>
+          <dd className="text-4xl font-bold tabular-nums">{stats.hits}</dd>
         </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center gap-1 px-8">
+          <dt className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">
             Accuracy
           </dt>
-          <dd className="text-2xl font-semibold">{accuracyPct}%</dd>
+          <dd className="text-4xl font-bold tabular-nums">{accuracyPct}%</dd>
         </div>
       </dl>
 
-      <div className="flex flex-col items-start gap-8 md:flex-row md:gap-12">
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+      <div className="flex flex-col items-start gap-10 md:flex-row md:gap-16">
+        <section className="flex flex-col items-center gap-3">
+          <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
             Your fleet
           </h2>
           <OwnBoard state={state} />
         </section>
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+        <section className="flex flex-col items-center gap-3">
+          <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
             Enemy fleet
           </h2>
           <EnemyBoard state={state} dispatch={dispatch} label="Enemy fleet" />
@@ -104,7 +112,7 @@ export function GameOverScreen({
       <button
         type="button"
         onClick={() => dispatch(reset(rng))}
-        className="rounded-md bg-cyan-700 px-6 py-2 font-semibold text-white shadow-sm transition-colors hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:bg-cyan-400 dark:text-slate-900 dark:hover:bg-cyan-300"
+        className="rounded-none border border-neutral-900 bg-neutral-900 px-8 py-3 text-xs font-semibold uppercase tracking-wider text-neutral-50 transition-colors hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 dark:focus-visible:ring-neutral-100"
       >
         Play again
       </button>
