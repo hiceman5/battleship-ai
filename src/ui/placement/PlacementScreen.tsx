@@ -77,7 +77,7 @@ export function PlacementScreen({
       </header>
 
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        <div className="md:w-56 md:shrink-0">
+        <div className="md:w-64 md:shrink-0">
           <ShipTray
             state={state}
             selectedType={selectedType}

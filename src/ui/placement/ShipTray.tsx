@@ -62,16 +62,16 @@ export function ShipTray({ state, selectedType, onSelect }: ShipTrayProps) {
                   'cursor-not-allowed opacity-60 line-through shadow-none',
               )}
             >
-              <span className="uppercase tracking-wide">
+              <span className="shrink-0 uppercase tracking-wide">
                 {SHIP_LABELS[entry.type]}
               </span>
-              <span className="text-xs tabular-nums opacity-80">
-                {'▮'.repeat(entry.size)} {entry.size}
+              <span className="min-w-0 shrink truncate text-xs tabular-nums opacity-80">
+                {entry.size} {'▮'.repeat(entry.size)}
               </span>
               <span
                 data-status={isPlaced ? 'placed' : 'remaining'}
                 className={cn(
-                  'rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider',
+                  'shrink-0 whitespace-nowrap rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase',
                   isPlaced
                     ? 'border-emerald-700 bg-emerald-400 text-emerald-950'
                     : 'border-black bg-yellow-300 text-black dark:border-white',
