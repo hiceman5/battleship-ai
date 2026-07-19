@@ -11,6 +11,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -45,11 +48,37 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Approved cell-state palette (SPEC §10, signed off): fill light / dark.
+        cell: {
+          water: { DEFAULT: '#e0f2fe', dark: '#0c2233' },
+          ship: { DEFAULT: '#64748b', dark: '#94a3b8' },
+          miss: { DEFAULT: '#64748b', dark: '#64748b' },
+          hit: {
+            DEFAULT: '#dc2626',
+            dark: '#fca5a5',
+            bg: '#fecaca',
+            'bg-dark': '#7f1d1d',
+          },
+          sunk: { DEFAULT: '#0f172a', dark: '#020617' },
+        },
+        placement: {
+          valid: { DEFAULT: '#a7f3d0', dark: '#34d399' },
+          invalid: { DEFAULT: '#fca5a5', dark: '#f87171' },
+        },
+      },
+      // Approved cell metrics (SPEC §10, signed off).
+      spacing: {
+        cell: '36px',
+        'cell-narrow': '28px',
+      },
+      gap: {
+        cell: '2px',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        cell: '4px',
       },
     },
   },

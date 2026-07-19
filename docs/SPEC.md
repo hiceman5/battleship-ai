@@ -245,18 +245,61 @@ The AI operates in three conceptual modes, evaluated in order each turn:
 ## 10. Visual specification
 
 The concrete visual design (exact colors, spacing, and typography) is
-**not invented ad hoc**. A concrete Tailwind palette — specific hex
-values for water/ship/hit/miss/sunk states, cell size, grid gap, grid
-labels, and font — must be **proposed and signed off before the UI
-slices are built**. Once approved, those values become part of this
-spec.
+**not invented ad hoc**. The following Tailwind palette has been
+**proposed and signed off**, and is now part of this spec.
+
+### Semantic tokens (light / dark hex)
+
+| Token                | Light     | Dark      |
+| -------------------- | --------- | --------- |
+| background           | `#f8fafc` | `#0b1220` |
+| foreground           | `#0f172a` | `#e2e8f0` |
+| muted-foreground     | `#475569` | `#94a3b8` |
+| border               | `#cbd5e1` | `#243244` |
+| card                 | `#ffffff` | `#111a2b` |
+| primary              | `#0e7490` | `#22d3ee` |
+| primary-foreground   | `#ffffff` | `#062c33` |
+
+These are stored as HSL CSS variables in `src/index.css` (`:root` and
+`.dark`) so shadcn tokens (`bg-background`, `text-foreground`,
+`text-muted-foreground`, `bg-card`, `bg-primary`, `border-border`, …)
+resolve for both modes.
+
+### Cell states (fill light / dark) — colorblind-safe marker SHAPE is mandatory
+
+| State           | Fill light | Fill dark | Marker (shape, not color alone)                          |
+| --------------- | ---------- | --------- | -------------------------------------------------------- |
+| water           | `#e0f2fe`  | `#0c2233` | none                                                     |
+| own ship        | `#64748b`  | `#94a3b8` | solid block                                              |
+| miss            | (water)    | (water)   | hollow/outlined dot in `#64748b`                         |
+| hit             | `#fecaca`  | `#7f1d1d` | ✕ / burst, `#dc2626` (light) / `#fca5a5` (dark)          |
+| sunk            | `#0f172a`  | `#020617` | filled marker                                            |
+| placement valid | emerald outline `#a7f3d0` / `#34d399`              |                                                          |
+| placement invalid | red outline `#fca5a5` / `#f87171`               |                                                          |
+
+Cell fills are applied to the shared, read-only board cells (which carry
+a per-cell `data-state`) via global rules in `src/index.css`; the
+matching Tailwind tokens live under `theme.extend.colors.cell.*` in
+`tailwind.config.js`.
+
+### Metrics
+
+- Cell: **36px** desktop / **28px** narrow; grid gap **2px**; cell
+  radius **4px**; coord labels A–J / 1–10 in muted, `text-xs`,
+  `tabular-nums`; focus ring 2px primary + 2px offset.
+
+### Type
+
+- **Inter** with fallback `ui-sans-serif, system-ui, sans-serif` (no
+  web-font download required); game-over headline `text-3xl font-bold`.
 
 - **Dark mode is enabled.** The app supports a dark theme (Tailwind
-  `dark` class strategy). Both light and dark palettes are part of the
-  visual sign-off above.
-- **Layout**: the two boards are shown **side-by-side on desktop** and
-  **stacked on narrow screens**. Mouse and keyboard are first-class
-  inputs; touch is best-effort.
+  `dark` class strategy), initialised from `prefers-color-scheme` and
+  then user-controllable. Both light and dark palettes are signed off
+  above.
+- **Layout**: the two boards are shown **side-by-side on desktop**
+  (`md:`+) and **stacked on narrow screens**. Mouse and keyboard are
+  first-class inputs; touch is best-effort.
 
 ## 11. State model and game loop
 

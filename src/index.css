@@ -3,49 +3,50 @@
 @tailwind utilities;
 
 @layer base {
+  /* Approved palette — SPEC §10 (signed off). Semantic shadcn tokens as HSL. */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --background: 210 40% 98%; /* #f8fafc */
+    --foreground: 222 47% 11%; /* #0f172a */
+    --card: 0 0% 100%; /* #ffffff */
+    --card-foreground: 222 47% 11%; /* #0f172a */
+    --popover: 0 0% 100%; /* #ffffff */
+    --popover-foreground: 222 47% 11%; /* #0f172a */
+    --primary: 193 82% 31%; /* #0e7490 */
+    --primary-foreground: 0 0% 100%; /* #ffffff */
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 19% 35%; /* #475569 */
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 72% 51%; /* #dc2626 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 84%; /* #cbd5e1 */
+    --input: 214 32% 84%; /* #cbd5e1 */
+    --ring: 193 82% 31%; /* #0e7490 */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 220 49% 8%; /* #0b1220 */
+    --foreground: 214 32% 91%; /* #e2e8f0 */
+    --card: 219 43% 12%; /* #111a2b */
+    --card-foreground: 214 32% 91%; /* #e2e8f0 */
+    --popover: 219 43% 12%; /* #111a2b */
+    --popover-foreground: 214 32% 91%; /* #e2e8f0 */
+    --primary: 188 86% 53%; /* #22d3ee */
+    --primary-foreground: 189 79% 11%; /* #062c33 */
+    --secondary: 214 31% 21%;
+    --secondary-foreground: 214 32% 91%;
+    --muted: 214 31% 21%;
+    --muted-foreground: 215 20% 65%; /* #94a3b8 */
+    --accent: 214 31% 21%;
+    --accent-foreground: 214 32% 91%;
+    --destructive: 0 91% 71%; /* #fca5a5 */
+    --destructive-foreground: 222 47% 11%;
+    --border: 214 31% 20%; /* #243244 */
+    --input: 214 31% 20%; /* #243244 */
+    --ring: 188 86% 53%; /* #22d3ee */
   }
 }
 
@@ -53,7 +54,49 @@
   * {
     @apply border-border;
   }
+  html {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/*
+ * Approved cell-state palette — SPEC §10 (signed off).
+ *
+ * The shared board cells are read-only components that carry a `data-state`
+ * attribute per cell. These unlayered rules apply the signed-off fills to those
+ * cells in both light and dark mode without editing the components. Placement
+ * ghost cells (`data-ghost`) keep their emerald/red validity outlines and are
+ * excluded here. Colorblind-safe marker shapes come from the marker components.
+ */
+[role='gridcell'][data-state='empty']:not([data-ghost]),
+[role='gridcell'][data-state='miss']:not([data-ghost]) {
+  background-color: #e0f2fe; /* water */
+}
+.dark [role='gridcell'][data-state='empty']:not([data-ghost]),
+.dark [role='gridcell'][data-state='miss']:not([data-ghost]) {
+  background-color: #0c2233;
+}
+
+[role='gridcell'][data-state='ship']:not([data-ghost]) {
+  background-color: #64748b; /* own ship — solid block */
+}
+.dark [role='gridcell'][data-state='ship']:not([data-ghost]) {
+  background-color: #94a3b8;
+}
+
+[role='gridcell'][data-state='hit']:not([data-ghost]) {
+  background-color: #fecaca; /* hit */
+}
+.dark [role='gridcell'][data-state='hit']:not([data-ghost]) {
+  background-color: #7f1d1d;
+}
+
+[role='gridcell'][data-state='sunk']:not([data-ghost]) {
+  background-color: #0f172a; /* sunk */
+}
+.dark [role='gridcell'][data-state='sunk']:not([data-ghost]) {
+  background-color: #020617;
 }
