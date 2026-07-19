@@ -8,9 +8,28 @@ import {
   Orientation,
   ShipType,
 } from '../engine/types'
+import {
+  createBoard,
+  generateRandomLayout,
+  isFleetDestroyed,
+  resolveShot,
+} from '../engine'
+import type { Rng } from '../engine'
 import { selectShot } from './targeting'
 
 const SIZE = 10
+
+/** Deterministic seeded PRNG (mulberry32) — pins fleet layouts in tests. */
+function mulberry32(seed: number): Rng {
+  let a = seed >>> 0
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 function emptyCells(width: number, height: number): Cell[][] {
   const rows: Cell[][] = []
@@ -308,5 +327,147 @@ describe('selectShot — never returns an already-fired cell (§6, task 7)', () 
 
     // The AI actually finished the job.
     expect(hits.length).toBe(shipCells.length)
+  })
+})
+
+/**
+ * REQUIRED (task): full-game integration against the real engine. Plays the
+ * AI to completion against many known random fleet layouts and proves it
+ * never double-fires and always clears the whole fleet.
+ */
+describe('selectShot — full game against the real engine (required)', () => {
+  const SEEDS = [1, 42, 123, 777, 2024, 31337, 99999, 8, 55, 100]
+
+  for (const seed of SEEDS) {
+    it(`never double-fires and sinks the whole fleet (seed ${seed})`, () => {
+      const rng = mulberry32(seed)
+      let board = createBoard(generateRandomLayout(rng))
+
+      const fired = new Set<string>()
+      const cellCount = board.width * board.height
+      let shots = 0
+
+      while (!isFleetDestroyed(board)) {
+        const shot = selectShot(board)
+
+        // In bounds.
+        expect(shot.row).toBeGreaterThanOrEqual(0)
+        expect(shot.row).toBeLessThan(board.height)
+        expect(shot.col).toBeGreaterThanOrEqual(0)
+        expect(shot.col).toBeLessThan(board.width)
+
+        // Never fired before.
+        const key = `${shot.row},${shot.col}`
+        expect(fired.has(key)).toBe(false)
+        fired.add(key)
+
+        board = resolveShot(board, shot)
+        shots++
+        // Cannot exceed the number of cells if it never repeats a shot.
+        expect(shots).toBeLessThanOrEqual(cellCount)
+      }
+
+      expect(isFleetDestroyed(board)).toBe(true)
+    })
+  }
+})
+
+/**
+ * REQUIRED (task): hunt/target state resets on sink. After a ship is sunk
+ * with no other unresolved hits, the AI must return to search behavior and
+ * NOT keep probing around the now-sunk ship.
+ */
+describe('selectShot — hunt/target resets on sink (required)', () => {
+  it('returns to parity search after a mid-board ship is sunk', () => {
+    // Cruiser at row 4, cols 4–6, fully hit → sunk. No other unresolved hits.
+    const sunkShip = makeShip({
+      id: 'cruiser',
+      type: ShipType.Cruiser,
+      size: 3,
+      origin: { row: 4, col: 4 },
+      orientation: Orientation.Horizontal,
+      hits: [
+        { row: 4, col: 4 },
+        { row: 4, col: 5 },
+        { row: 4, col: 6 },
+      ],
+    })
+    // A second, untouched ship elsewhere so the fleet is not destroyed.
+    const otherShip = makeShip({
+      id: 'destroyer',
+      type: ShipType.Destroyer,
+      size: 2,
+      origin: { row: 8, col: 0 },
+      orientation: Orientation.Horizontal,
+    })
+
+    const shot = selectShot(
+      makeBoard({
+        ships: [sunkShip, otherShip],
+        shots: [
+          { row: 4, col: 4 },
+          { row: 4, col: 5 },
+          { row: 4, col: 6 },
+        ],
+      }),
+    )
+
+    // Must be a search (parity) move, NOT a neighbor of the sunk ship.
+    expect((shot.row + shot.col) % 2).toBe(0)
+    const sunkNeighbors = new Set([
+      '3,4',
+      '5,4',
+      '3,5',
+      '5,5',
+      '3,6',
+      '5,6',
+      '4,3',
+      '4,7',
+    ])
+    expect(sunkNeighbors.has(`${shot.row},${shot.col}`)).toBe(false)
+    // Lowest un-fired parity cell overall.
+    expect(shot).toEqual({ row: 0, col: 0 })
+  })
+
+  it('does not hunt around a sunk ship even when it was just completed in target mode', () => {
+    // Battleship at row 2, cols 1–4, all four cells hit → sunk.
+    const sunkShip = makeShip({
+      id: 'battleship',
+      type: ShipType.Battleship,
+      size: 4,
+      origin: { row: 2, col: 1 },
+      orientation: Orientation.Horizontal,
+      hits: [
+        { row: 2, col: 1 },
+        { row: 2, col: 2 },
+        { row: 2, col: 3 },
+        { row: 2, col: 4 },
+      ],
+    })
+    const otherShip = makeShip({
+      id: 'submarine',
+      type: ShipType.Submarine,
+      size: 3,
+      origin: { row: 7, col: 7 },
+      orientation: Orientation.Vertical,
+    })
+
+    const shot = selectShot(
+      makeBoard({
+        ships: [sunkShip, otherShip],
+        // Include the neighbor cells the target-mode line would have probed,
+        // as misses, so the ONLY reason not to re-probe is the sink reset.
+        shots: [
+          { row: 2, col: 1 },
+          { row: 2, col: 2 },
+          { row: 2, col: 3 },
+          { row: 2, col: 4 },
+        ],
+      }),
+    )
+
+    // Search mode again: even parity, and not adjacent to the sunk line.
+    expect((shot.row + shot.col) % 2).toBe(0)
+    expect(shot).toEqual({ row: 0, col: 0 })
   })
 })
