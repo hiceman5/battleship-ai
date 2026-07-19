@@ -16,11 +16,12 @@ import {
   createEmptyBoard,
   generateRandomLayout,
   isFleetDestroyed,
+  isLegalPlacement,
   isSunk,
   resolveShot,
 } from '../engine'
 import { selectShot } from '../ai'
-import { aiTurn, fire, placeShip, reset } from './actions'
+import { aiTurn, clear, fire, placeShip, reset, start } from './actions'
 import { gameReducer } from './gameReducer'
 import { createInitialState, initialState } from './initialState'
 
@@ -34,6 +35,25 @@ function seededRng(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
+}
+
+/**
+ * Legally place all five human ships (each on its own row, well separated so
+ * the no-touch rule holds) and return the resulting state.
+ */
+function placeFullHumanFleet(state: GameState): GameState {
+  const layout: ReadonlyArray<[ShipType, number]> = [
+    [ShipType.Carrier, 0],
+    [ShipType.Battleship, 2],
+    [ShipType.Cruiser, 4],
+    [ShipType.Submarine, 6],
+    [ShipType.Destroyer, 8],
+  ]
+  let s = state
+  for (const [type, row] of layout) {
+    s = gameReducer(s, placeShip(type, { row, col: 0 }, Orientation.Horizontal))
+  }
+  return s
 }
 
 function shipOfType(board: Board, type: ShipType): Ship {
@@ -107,25 +127,100 @@ describe('gameReducer PLACE_SHIP (SPEC §3.2)', () => {
     expect(afterSecond).toBe(afterFirst)
   })
 
-  it('begins play once the full fleet is legally placed', () => {
-    // Each ship on its own row, well separated, satisfies the no-touch rule.
-    const layout: ReadonlyArray<[ShipType, number]> = [
-      [ShipType.Carrier, 0],
-      [ShipType.Battleship, 2],
-      [ShipType.Cruiser, 4],
-      [ShipType.Submarine, 6],
-      [ShipType.Destroyer, 8],
-    ]
-    let state = createInitialState()
-    for (const [type, row] of layout) {
-      state = gameReducer(
-        state,
-        placeShip(type, { row, col: 0 }, Orientation.Horizontal),
-      )
-    }
+  it('does NOT auto-start once the full fleet is placed (stays Setup)', () => {
+    const state = placeFullHumanFleet(createInitialState())
     expect(state.boards[Player.Human].ships).toHaveLength(FLEET.length)
-    expect(state.phase).toBe(GamePhase.Playing)
+    // Regression (start-bug): placing the 5th ship must NOT begin play.
+    expect(state.phase).toBe(GamePhase.Setup)
     expect(state.currentPlayer).toBe(Player.Human)
+    // The AI board is still untouched/empty until START lays its fleet.
+    expect(state.boards[Player.Ai].ships).toEqual([])
+  })
+})
+
+describe('start-bug regression (SPEC §3.2, §4)', () => {
+  it('a fresh game does NOT auto-start with an empty AI board', () => {
+    // From the canonical initial state, place every ship legally.
+    const state = placeFullHumanFleet(createInitialState())
+    // The game must remain in Setup — never reaching Playing with an
+    // empty AI board (which would leave the game instantly decided).
+    expect(state.phase).toBe(GamePhase.Setup)
+    expect(state.boards[Player.Ai].ships).toEqual([])
+    expect(state.winner).toBeNull()
+  })
+})
+
+describe('gameReducer START (SPEC §3.2, §4)', () => {
+  it('is a no-op (same reference) with fewer than five ships placed', () => {
+    // Only one ship placed: START must not begin the game.
+    const placedOne = gameReducer(
+      createInitialState(),
+      placeShip(ShipType.Destroyer, { row: 0, col: 0 }, Orientation.Horizontal),
+    )
+    const next = gameReducer(placedOne, start(seededRng(1)))
+    expect(next).toBe(placedOne)
+  })
+
+  it('is a no-op (same reference) from the empty initial state', () => {
+    const empty = createInitialState()
+    expect(gameReducer(empty, start(seededRng(1)))).toBe(empty)
+  })
+
+  it('transitions to Playing with the human to move and a full AI fleet', () => {
+    const ready = placeFullHumanFleet(createInitialState())
+    const next = gameReducer(ready, start(seededRng(42)))
+
+    expect(next.phase).toBe(GamePhase.Playing)
+    expect(next.currentPlayer).toBe(Player.Human)
+    // The human fleet placed during Setup is preserved.
+    expect(next.boards[Player.Human].ships).toHaveLength(FLEET.length)
+
+    const aiShips = next.boards[Player.Ai].ships
+    expect(aiShips).toHaveLength(FLEET.length)
+    const aiCells = aiShips.reduce((sum, s) => sum + s.size, 0)
+    expect(aiCells).toBe(FLEET_CELL_COUNT)
+
+    // No two AI ships touch (king-move buffer): each ship is legal on a
+    // board containing the others.
+    const aiBoard = next.boards[Player.Ai]
+    for (const ship of aiShips) {
+      expect(isLegalPlacement(aiBoard, ship)).toBe(true)
+    }
+  })
+
+  it('lays the AI fleet deterministically under a seeded RNG', () => {
+    const ready = placeFullHumanFleet(createInitialState())
+    const a = gameReducer(ready, start(seededRng(123)))
+    const b = gameReducer(ready, start(seededRng(123)))
+    expect(a.boards[Player.Ai].ships).toEqual(b.boards[Player.Ai].ships)
+
+    const c = gameReducer(ready, start(seededRng(999)))
+    expect(c.boards[Player.Ai].ships).not.toEqual(a.boards[Player.Ai].ships)
+  })
+})
+
+describe('gameReducer CLEAR (SPEC §3.2)', () => {
+  it('empties the human fleet during Setup, preserving phase and AI board', () => {
+    // A Setup state with human ships placed and an AI fleet already laid.
+    const ready = placeFullHumanFleet(createInitialState())
+    const withAi = gameReducer(ready, start(seededRng(5)))
+    // Return to Setup with the AI fleet intact to exercise CLEAR's guarantees.
+    const setupWithAi: GameState = { ...withAi, phase: GamePhase.Setup }
+
+    const next = gameReducer(setupWithAi, clear())
+
+    expect(next.phase).toBe(GamePhase.Setup)
+    expect(next.currentPlayer).toBe(setupWithAi.currentPlayer)
+    expect(next.boards[Player.Human].ships).toEqual([])
+    // AI board is untouched.
+    expect(next.boards[Player.Ai]).toBe(setupWithAi.boards[Player.Ai])
+  })
+
+  it('is a no-op (same reference) outside Setup', () => {
+    const ready = placeFullHumanFleet(createInitialState())
+    const playing = gameReducer(ready, start(seededRng(7)))
+    expect(playing.phase).toBe(GamePhase.Playing)
+    expect(gameReducer(playing, clear())).toBe(playing)
   })
 })
 
