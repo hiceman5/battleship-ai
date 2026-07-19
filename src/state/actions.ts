@@ -8,9 +8,11 @@
 import type { Coord, Orientation, ShipType } from '../engine/types'
 import type { Rng } from '../engine'
 
-/** The four action kinds that drive the game (SPEC §11). */
+/** The action kinds that drive the game (SPEC §11). */
 export enum ActionType {
   PlaceShip = 'PLACE_SHIP',
+  Start = 'START',
+  Clear = 'CLEAR',
   Fire = 'FIRE',
   AiTurn = 'AI_TURN',
   Reset = 'RESET',
@@ -28,6 +30,23 @@ export type PlaceShipAction = {
     readonly origin: Coord
     readonly orientation: Orientation
   }
+}
+
+/**
+ * Begin the game from `Setup` (SPEC §3.2): only valid once all five ships are
+ * legally placed. The injected RNG lays down the AI fleet so tests can pin its
+ * layout (SPEC §3.3). Auto-starting on the fifth placement is NOT allowed.
+ */
+export type StartAction = {
+  readonly type: ActionType.Start
+  readonly payload: {
+    readonly rng: Rng
+  }
+}
+
+/** Remove all of the human's placed ships during `Setup` (SPEC §3.2). */
+export type ClearAction = {
+  readonly type: ActionType.Clear
 }
 
 /** Fire the current player's single shot at `coord` on the opponent board. */
@@ -57,6 +76,8 @@ export type ResetAction = {
 /** The full discriminated union of game actions. */
 export type GameAction =
   | PlaceShipAction
+  | StartAction
+  | ClearAction
   | FireAction
   | AiTurnAction
   | ResetAction
@@ -68,6 +89,16 @@ export function placeShip(
   orientation: Orientation,
 ): PlaceShipAction {
   return { type: ActionType.PlaceShip, payload: { shipType, origin, orientation } }
+}
+
+/** Create a {@link StartAction} with the injectable RNG (SPEC §3.2, §3.3). */
+export function start(rng: Rng): StartAction {
+  return { type: ActionType.Start, payload: { rng } }
+}
+
+/** Create a {@link ClearAction}. */
+export function clear(): ClearAction {
+  return { type: ActionType.Clear }
 }
 
 /** Create a {@link FireAction}. */

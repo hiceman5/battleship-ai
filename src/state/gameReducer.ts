@@ -32,7 +32,8 @@ function opponentOf(player: Player): Player {
  * the placement is engine-legal. Illegal placements (out of bounds, overlap,
  * touching) and duplicate ship classes are rejected with NO state change: the
  * exact same state reference is returned. Placing the fifth legal ship
- * completes the fleet and begins play (the human fires first, §4).
+ * completes the fleet but does NOT begin play: the game stays in `Setup`
+ * until an explicit `START` action (SPEC §3.2). The human fires first (§4).
  */
 function placeShip(
   state: GameState,
@@ -61,12 +62,46 @@ function placeShip(
 
   const ships = [...humanBoard.ships, ship]
   const board = createBoard(ships, humanBoard.width, humanBoard.height)
-  const fleetComplete = ships.length === FLEET.length
 
   return {
     ...state,
-    phase: fleetComplete ? GamePhase.Playing : GamePhase.Setup,
     boards: { ...state.boards, [Player.Human]: board },
+  }
+}
+
+/**
+ * `START` (SPEC §3.2, §4): begin the game. Valid only in `Setup` and only
+ * once the human has legally placed all five ships (otherwise a no-op that
+ * returns the same state reference). Lays down the AI fleet with the injected
+ * RNG (§3.3), enters `Playing`, and leaves the human to move first (§4).
+ */
+function start(
+  state: GameState,
+  payload: Extract<GameAction, { type: ActionType.Start }>['payload'],
+): GameState {
+  if (state.phase !== GamePhase.Setup) return state
+  if (state.boards[Player.Human].ships.length !== FLEET.length) return state
+
+  const aiShips = generateRandomLayout(payload.rng)
+  return {
+    ...state,
+    phase: GamePhase.Playing,
+    currentPlayer: Player.Human,
+    boards: { ...state.boards, [Player.Ai]: createBoard(aiShips) },
+  }
+}
+
+/**
+ * `CLEAR` (SPEC §3.2): during `Setup`, remove all of the human's placed ships
+ * (returning the human board to empty) while leaving phase, current player and
+ * the AI board untouched. A no-op outside `Setup`.
+ */
+function clear(state: GameState): GameState {
+  if (state.phase !== GamePhase.Setup) return state
+
+  return {
+    ...state,
+    boards: { ...state.boards, [Player.Human]: createEmptyBoard() },
   }
 }
 
@@ -145,6 +180,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case ActionType.PlaceShip:
       return placeShip(state, action.payload)
+    case ActionType.Start:
+      return start(state, action.payload)
+    case ActionType.Clear:
+      return clear(state)
     case ActionType.Fire:
       return fire(state, action.payload)
     case ActionType.AiTurn:
