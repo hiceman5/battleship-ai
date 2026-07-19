@@ -13,35 +13,47 @@ type MarkerProps = {
   readonly className?: string
 }
 
-/** Miss: a small dot. */
+/** Miss: a bold ringed dot (splash). */
 function DotMarker({ className }: MarkerProps) {
   return (
     <svg
       data-marker="dot"
       viewBox="0 0 24 24"
-      className={cn('h-2.5 w-2.5 text-slate-400', className)}
+      className={cn('h-3.5 w-3.5 text-slate-800 dark:text-sky-200', className)}
       aria-hidden="true"
       focusable="false"
     >
-      <circle cx="12" cy="12" r="6" fill="currentColor" />
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        opacity="0.5"
+      />
+      <circle cx="12" cy="12" r="4" fill="currentColor" />
     </svg>
   )
 }
 
-/** Hit: an ✕ / cross. */
+/** Hit: a bold white ✕ / cross that pops on the vivid red fill. */
 function CrossMarker({ className }: MarkerProps) {
   return (
     <svg
       data-marker="cross"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-600 dark:text-red-400', className)}
+      className={cn(
+        'h-5 w-5 text-white [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.55))]',
+        className,
+      )}
       aria-hidden="true"
       focusable="false"
     >
       <path
         d="M5 5 L19 19 M19 5 L5 19"
         stroke="currentColor"
-        strokeWidth="3"
+        strokeWidth="4"
         strokeLinecap="round"
         fill="none"
       />
@@ -49,13 +61,16 @@ function CrossMarker({ className }: MarkerProps) {
   )
 }
 
-/** Sunk: a filled burst marker. */
+/** Sunk: a filled gold burst — dramatic and celebratory on the near-black fill. */
 function BurstMarker({ className }: MarkerProps) {
   return (
     <svg
       data-marker="burst"
       viewBox="0 0 24 24"
-      className={cn('h-4 w-4 text-red-800 dark:text-red-300', className)}
+      className={cn(
+        'h-5 w-5 text-yellow-300 [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.6))]',
+        className,
+      )}
       aria-hidden="true"
       focusable="false"
     >
@@ -74,13 +89,13 @@ function ShipMarker({ className }: MarkerProps) {
       data-marker="ship"
       viewBox="0 0 24 24"
       className={cn(
-        'h-3.5 w-3.5 text-slate-600 dark:text-slate-300',
+        'h-4 w-4 text-white dark:text-indigo-950',
         className,
       )}
       aria-hidden="true"
       focusable="false"
     >
-      <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" />
+      <rect x="4" y="4" width="16" height="16" rx="3" fill="currentColor" />
     </svg>
   )
 }

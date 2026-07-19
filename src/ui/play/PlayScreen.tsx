@@ -5,6 +5,8 @@ import { Announcer } from './Announcer'
 import { EnemyBoard } from './EnemyBoard'
 import { OwnBoard } from './OwnBoard'
 import { useAiTurn } from './useAiTurn'
+import { cn } from '@/lib/utils'
+import { arcadeHeadline } from '@/ui/lib/arcade'
 
 export type PlayScreenProps = {
   readonly state: GameState
@@ -21,25 +23,48 @@ export type PlayScreenProps = {
 export function PlayScreen({ state, dispatch, aiDelayMs }: PlayScreenProps) {
   const { thinking } = useAiTurn(state, dispatch, aiDelayMs)
 
+  const yourTurn = !thinking && state.currentPlayer === Player.Human
+  const statusText = thinking
+    ? 'Enemy is thinking…'
+    : yourTurn
+      ? 'Your turn — fire at will!'
+      : 'Waiting…'
+
   return (
-    <div className="flex flex-col items-center gap-6 text-slate-900 dark:text-slate-200">
+    <div className="flex flex-col items-center gap-6 text-slate-900 dark:text-slate-50">
       <Announcer state={state} />
-      <p className="text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
-        {thinking
-          ? 'Enemy is thinking…'
-          : state.currentPlayer === Player.Human
-            ? 'Your turn — fire at will'
-            : 'Waiting…'}
+      <p
+        aria-live="polite"
+        className={cn(
+          'rounded-full border-[3px] border-black px-5 py-2 text-sm font-black uppercase tracking-wide shadow-[4px_4px_0_0_rgba(0,0,0,1)] dark:border-white dark:shadow-[4px_4px_0_0_rgba(255,255,255,0.85)]',
+          thinking
+            ? 'bg-fuchsia-600 text-white'
+            : yourTurn
+              ? 'bg-yellow-400 text-black'
+              : 'bg-white text-slate-900 dark:bg-slate-800 dark:text-white',
+        )}
+      >
+        {statusText}
       </p>
       <div className="flex flex-col items-start gap-8 md:flex-row md:gap-12">
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+        <section className="flex flex-col items-center gap-3">
+          <h2
+            className={cn(
+              arcadeHeadline,
+              'rounded-lg bg-indigo-600 px-3 py-1 text-sm text-white',
+            )}
+          >
             Your fleet
           </h2>
           <OwnBoard state={state} />
         </section>
-        <section className="flex flex-col items-center gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
+        <section className="flex flex-col items-center gap-3">
+          <h2
+            className={cn(
+              arcadeHeadline,
+              'rounded-lg bg-red-600 px-3 py-1 text-sm text-white',
+            )}
+          >
             Enemy waters
           </h2>
           <EnemyBoard state={state} dispatch={dispatch} disabled={thinking} />

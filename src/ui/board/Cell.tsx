@@ -2,6 +2,16 @@ import { forwardRef } from 'react'
 import { CellState, type Coord } from '@/engine/types'
 import { cn } from '@/lib/utils'
 import { CellMarker } from './markers'
+import styles from './cell.module.css'
+
+/** ARCADE fill classes per state (re-expressing SPEC §10 fills inside src/ui). */
+const FILL_CLASS: Readonly<Record<CellState, string>> = {
+  [CellState.Empty]: styles.empty,
+  [CellState.Miss]: styles.miss,
+  [CellState.Ship]: styles.ship,
+  [CellState.Hit]: styles.hit,
+  [CellState.Sunk]: styles.sunk,
+}
 
 export type CellProps = {
   readonly coord: Coord
@@ -38,14 +48,12 @@ export const Cell = forwardRef<HTMLDivElement, CellProps>(function Cell(
         if (!disabled) onFire()
       }}
       className={cn(
-        'flex aspect-square w-8 items-center justify-center border border-slate-300 text-sm outline-none dark:border-slate-700',
-        'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-0',
-        state === CellState.Empty && 'bg-sky-50 dark:bg-slate-900',
-        state === CellState.Miss && 'bg-sky-100 dark:bg-slate-800',
-        (state === CellState.Hit || state === CellState.Sunk) &&
-          'bg-red-100 dark:bg-red-950',
-        state === CellState.Ship && 'bg-slate-200 dark:bg-slate-700',
-        disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:brightness-95',
+        'relative flex aspect-square w-8 items-center justify-center rounded-[3px] text-sm outline-none transition-transform',
+        'focus-visible:relative focus-visible:z-10 focus-visible:ring-4 focus-visible:ring-fuchsia-500 focus-visible:ring-offset-0',
+        FILL_CLASS[state],
+        disabled
+          ? 'cursor-not-allowed'
+          : 'cursor-pointer hover:z-10 hover:scale-[1.08] hover:brightness-110 hover:ring-2 hover:ring-inset hover:ring-yellow-300',
       )}
     >
       <CellMarker state={state} />
